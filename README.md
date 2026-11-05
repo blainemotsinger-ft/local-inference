@@ -110,15 +110,24 @@ Colibri fills nearly the whole card with weights. The conversation starts
 small and grows as the worker reads files and runs commands; when it needs
 more room, Colibri takes it back from the cached weights.
 
-On an 8 GB card that is where things go wrong. After a few of those growths,
-Colibri moves weights onto the CPU and the model slows down by a factor of
-about 35: one generated token went from about 50 ms to 1,757 ms. A worker
-step that took 11 seconds then runs past Claude Code's 10-minute limit, and
-the engine stays slow until Colibri is restarted. In testing, two worker runs
-out of two did this, at about 13,000 and 15,000 tokens of conversation.
+On an 8 GB card, growing the conversation's memory while the card is nearly
+full can end with Colibri declaring the GPU lost:
 
-The fix is to cap the weights, so the conversation has room to grow without
-taking any back. Set it when you install:
+```
+[VK] qwen36 chain: the device was lost; rebuilding the state of 15360 positions on the CPU, which runs from here on
+```
+
+From then on the whole model runs on the CPU until Colibri is restarted. One
+step of the model went from about 60 ms to 7,737 ms, so a worker step that
+took 11 seconds runs past Claude Code's 10-minute limit and never finishes.
+In testing, both long worker runs on Qwen3.6 without a cap ended this way, at
+about 13,000 and 15,000 tokens of conversation. The kernel log showed no
+NVIDIA driver error, so the card itself may not have failed: Colibri counts
+any wait of more than 10 seconds for the GPU as a lost device. The cause is
+in Colibri and is not pinned down yet.
+
+The workaround is to cap the weights, so the conversation has room to grow
+on the card without taking any back. Set it when you install:
 
 ```bash
 scripts/install-colibri.sh qwen36-35b --gpu-cache 2.5
@@ -143,8 +152,10 @@ COLIBRI_GPU_CACHE_GB=2 scripts/start-colibri.sh
 To size it: Colibri logs each growth of the conversation memory to
 `~/.local/share/colibri/logs/serve.log` as `the KV mirror grows from ... (...
 MiB of them from the expert tier)`. If that second number is above 0, lower
-the cap. Qwen3.6 needs about 20 KB of GPU memory per token of conversation,
-so 64K tokens need about 1.3 GB.
+the cap. If the log says `the device was lost`, the card ran out of room
+anyway: lower the cap, or use a smaller context (`--ctx`). Qwen3.6 needs about
+20 KB of GPU memory per token of conversation, so 64K tokens need about
+1.3 GB.
 
 Measured on a laptop with an RTX 2000 Ada (8 GB), 64 GB of RAM, Qwen3.6, 64K
 context:
@@ -152,7 +163,7 @@ context:
 | | Colibri's default (4.39 GiB of weights) | `--gpu-cache 2.5` |
 |---|---|---|
 | Chat, 7 turns after the first | 25.6 tok/s | 18.8 tok/s |
-| `/farm` worker, 43 shellcheck fixes in 4 scripts | slowed to a crawl after 4 minutes, at 15,000 tokens; no result | finished in 5 min 59 s, 28 turns, every check passing |
+| `/farm` worker, 43 shellcheck fixes in 4 scripts | GPU declared lost after 4 minutes, at 15,000 tokens; no result | finished in 5 min 59 s, 28 turns, every check passing |
 
 The cap costs about a quarter of the chat speed. For the worker, where the
 conversation keeps growing, it is the difference between finishing and not.
@@ -160,10 +171,11 @@ conversation keeps growing, it is the difference between finishing and not.
 Qwen3-Coder-30B-A3B does worse on that card even with the cap. It keeps its
 attention cache in all 48 of its layers, where Qwen3.6 keeps it in 10 of 40,
 so each token of conversation takes about 98 KB rather than 20 KB. Colibri
-gives it 32K of context instead of 64K, it chatted at 12.1 tok/s, and its
-worker run filled the card and slowed to a crawl at about 11,000 tokens
-without finishing. On a card with more memory the comparison may come out
-differently.
+gives it 32K of context instead of 64K, and it chatted at 12.1 tok/s. Its
+worker run filled the card (7.6 of 8.2 GB) and the GPU was declared lost at
+about 11,000 tokens, with no memory taken back from the weights, so a cap of
+2.5 GiB was not enough room for it. On a card with more memory the comparison
+may come out differently.
 
 Wire OpenCode:
 

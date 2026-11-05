@@ -36,9 +36,9 @@ warnings in 4 scripts, then run shellcheck twice and the test suite.
 
 | Model | GPU weight cache | Result |
 |---|---|---|
-| Qwen3.6-35B-A3B | Colibri's default | Two runs; both slowed to a crawl after Colibri took GPU memory back from the weights, at about 13,000 and 15,000 tokens. No result. |
+| Qwen3.6-35B-A3B | Colibri's default | Two runs. In both, Colibri declared the GPU lost right after taking memory back from the weights to grow the conversation, at about 13,000 and 15,000 tokens, and ran on the CPU from then on (about 60 ms a step before, 7,737 ms after). No result. |
 | Qwen3.6-35B-A3B | 2.5 GiB (`--gpu-cache 2.5`) | Finished in 5 min 59 s, 28 turns, 14 edits, every check passing. Largest request 16,324 tokens; no memory taken from the weights. |
-| Qwen3-Coder-30B-A3B | 2.5 GiB (`--gpu-cache 2.5`) | 4 steps and no edits in 10 minutes, then slowed to a crawl at about 11,000 tokens with the card full (7.6 of 8.2 GB). |
+| Qwen3-Coder-30B-A3B | 2.5 GiB (`--gpu-cache 2.5`) | 4 steps and no edits in 10 minutes. Then Colibri declared the GPU lost while growing the conversation at about 11,000 tokens, with the card full (7.6 of 8.2 GB) and no memory taken from the weights. |
 
 See "GPU memory" in the README for what the cache setting does.
 

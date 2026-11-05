@@ -148,9 +148,9 @@ if [[ -n "${SUGGEST}" ]]; then
   cat <<EOF
 
 This GPU has ${SUGGEST} MiB. On an 8 GB card, Colibri's default left no room
-for a long conversation, and a worker slowed to a crawl partway through.
-For qwen36-35b, capping the cached weights at 2.5 GiB fixed it; see
-"GPU memory" in the README. To set it:
+for a long conversation: partway through a worker run, Colibri declared the
+GPU lost and ran on the CPU from then on. For qwen36-35b, capping the cached
+weights at 2.5 GiB prevented it; see "GPU memory" in the README. To set it:
   scripts/install-colibri.sh ${MODEL} --gpu-cache 2.5
 EOF
 fi

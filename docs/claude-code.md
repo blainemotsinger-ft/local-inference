@@ -206,16 +206,18 @@ token comes back, the local model has to read all of it.
 - Colibri sends a keepalive every 10 seconds while it works, so Claude Code
   does not give up. A session that looks stuck on its first request is usually
   still processing.
-- A worker that was making steps every 10 seconds or so and then stops for
-  minutes, partway through, is usually out of GPU memory: the conversation
-  grew and Colibri moved model weights off the card to make room. Claude Code
-  gives up after 10 minutes and retries, and Colibri answers the retries with
-  `429` until the old request ends. Check
-  `~/.local/share/colibri/logs/serve.log` for `the KV mirror grows`, and see
-  "GPU memory" in the README for `--gpu-cache`.
 - The `/farm` worker sends a short system prompt and six tools for this reason.
   `scripts/claude-colibri.sh` sends Claude Code's full prompt and all your
   tools and MCP servers, so its first request is much larger.
+- A worker that was taking a step every 10 seconds or so and then stops for
+  minutes, partway through, has usually lost the GPU. Look in
+  `~/.local/share/colibri/logs/serve.log` for `the device was lost`, just
+  after a `the KV mirror grows` line: the conversation's memory grew on a
+  nearly full card, and Colibri now runs the whole model on the CPU, over 100
+  times slower, until it is restarted. Claude Code gives up on the request
+  after 10 minutes and retries, and Colibri answers the retries with `429`
+  until the old request ends. Restart Colibri, and see "GPU memory" in the
+  README for `--gpu-cache`.
 
 ## Expected messages
 
