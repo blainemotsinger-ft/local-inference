@@ -8,7 +8,7 @@ set -euo pipefail
 
 ROOT="$(cd "$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")/.." && pwd)"
 # shellcheck source-path=SCRIPTDIR source=colibri-claude-env.sh
-. "$ROOT/scripts/colibri-claude-env.sh"
+. "${ROOT}/scripts/colibri-claude-env.sh"
 
 colibri_configure
 
@@ -16,6 +16,6 @@ colibri_configure
 # to a claude.ai account does not stop to ask which credential to use.
 # Colibri accepts either header.
 unset ANTHROPIC_API_KEY
-export ANTHROPIC_AUTH_TOKEN="$COLIBRI_API_KEY"
+export ANTHROPIC_AUTH_TOKEN="${COLIBRI_API_KEY}"
 
 exec claude "$@"
