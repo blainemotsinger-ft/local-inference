@@ -1,0 +1,30 @@
+// Merge this object into the "providers" object of
+// ~/.config/opencode/opencode.jsonc. It is a fragment, not a full config.
+//
+// Set before starting OpenCode:
+//   export COLIBRI_BASE_URL=http://127.0.0.1:8000/v1
+//   export COLIBRI_API_KEY=local
+"colibri": {
+  "name": "Colibri (local)",
+  "package": "@opencode/ai/providers/openai-compatible",
+  "settings": {
+    "baseURL": "{env:COLIBRI_BASE_URL}",
+    "apiKey": "{env:COLIBRI_API_KEY}",
+    "headerTimeout": 600000,
+    "chunkTimeout": 600000
+  },
+  "models": {
+    "qwen3.6-colibri": {
+      "name": "Qwen3.6 35B-A3B (local)",
+      "capabilities": {
+        "tools": true,
+        "input": ["text"],
+        "output": ["text"]
+      },
+      "limit": {
+        "context": 131072,
+        "output": 32768
+      }
+    }
+  }
+}
