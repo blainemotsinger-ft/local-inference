@@ -125,12 +125,31 @@ scripts/claude-colibri.sh
 Its first request is slow. The local model has to read Claude Code's full
 system prompt and tool list before it answers; see `docs/claude-code.md`.
 
+## Tests
+
+```bash
+python3 -m unittest discover -s tests -v
+```
+
+The tests check the Claude Code scripts against `tests/fake_colibri.py`, a
+fake Colibri server that plays back scripted model answers. No model, GPU, or
+network is needed, and the run takes a few seconds. They check that the worker
+is refused `git push`, `git commit`, `git rebase`, and `rm`; that it can
+create, edit, and search files; and that every request goes to the local model
+with the local key. Tests that start Claude Code are skipped when `claude` is
+not installed. Each test uses its own git repository and `CLAUDE_CONFIG_DIR`,
+so your `~/.claude` is not touched.
+
+They do not test the model's work or Colibri itself. Run a real `/farm` task
+for that.
+
 ## What to commit
 
 - `opencode/agents/local-worker.md`
 - `opencode/commands/farm.md`
 - `opencode/providers/colibri.jsonc`
 - `claude/`
+- `tests/`
 - `scripts/`
 - `docs/`
 - `.gitignore`

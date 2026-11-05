@@ -7,3 +7,4 @@ logs/
 setup.json
 .env
 opencode.local.jsonc
+__pycache__/

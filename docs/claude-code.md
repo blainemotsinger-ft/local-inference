@@ -156,6 +156,45 @@ token comes back, the local model has to read all of it.
   from the worker. The worker uses the local key, not your claude.ai login,
   so your organization's connectors are not loaded into it. That is intended.
 
+## Tests
+
+```bash
+python3 -m unittest discover -s tests -v
+```
+
+`tests/fake_colibri.py` stands in for Colibri. It answers `/v1/models` and
+`/v1/messages` in Anthropic's format and, instead of running a model, plays
+back a script of tool calls and answers. It records every request, so the tests
+can check what Claude Code actually sent and what each tool call returned.
+
+`tests/test_claude.py` covers:
+
+| Test | What it checks |
+|---|---|
+| `WorkerPermissions` | `git push`, `git commit`, `git rebase`, `rm`, and `cd . && git commit` are all refused and nothing is committed or deleted; `Write`, `Edit`, `Glob`, `Grep`, and `Bash` work |
+| `WorkerRequests` | Every request uses the local model id and the `local` key; the worker gets its six tools and no web tools; the task text arrives unchanged, quotes and `$` included; it still uses the local key when started from a logged-in Claude Code session |
+| `WorkerErrors` | No task gives a usage message and exit 2; Colibri not running gives exit 1 |
+| `SessionScript` | `claude-colibri.sh` sends a bearer token, not your own API key |
+| `EnvFile` | `COLIBRI_BASE_URL` with or without `/v1` and a trailing `/`; defaults and overrides |
+| `Bootstrap` | The skill is copied, the link points at the worker, and the MCP server is registered once |
+
+Run the fake by hand to try the scripts without a model:
+
+```bash
+python3 tests/fake_colibri.py --port 8000 --log requests.jsonl
+claude-local-worker "say done"      # in another terminal
+```
+
+`--script steps.json` takes a JSON list of steps, each
+`{"tool": "Bash", "input": {"command": "..."}}` or `{"text": "final answer"}`.
+Without it, the fake answers `done`.
+
+These tests caught three problems while the scripts were being written:
+`--tools` took the task text as another tool name, `--bare` removed `Write`,
+and Claude Code assumed a 200K context window for the local model. Rerun them
+after updating Claude Code. A new version that renames a tool or changes a flag
+fails here first.
+
 ## Files
 
 | File | What it is |
@@ -167,3 +206,5 @@ token comes back, the local model has to read all of it.
 | `scripts/claude-colibri.sh` | Runs a whole Claude Code session on Colibri |
 | `scripts/colibri-claude-env.sh` | The shared settings above, sourced by both scripts |
 | `scripts/bootstrap-claude.sh` | Installs the skill, the link, and the MCP server |
+| `tests/fake_colibri.py` | The fake Colibri server |
+| `tests/test_claude.py` | The tests |
