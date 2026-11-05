@@ -10,7 +10,7 @@ ROOT="$(cd "$(dirname "$(readlink -f "${BASH_SOURCE[0]}")")/.." && pwd)"
 # shellcheck source-path=SCRIPTDIR source=colibri-claude-env.sh
 . "$ROOT/scripts/colibri-claude-env.sh"
 
-colibri_check
+colibri_configure
 
 # A bearer token, not ANTHROPIC_API_KEY, so a Claude Code that is logged in
 # to a claude.ai account does not stop to ask which credential to use.

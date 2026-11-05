@@ -1,5 +1,5 @@
 ---
-description: Bounded coding worker on the local Qwen3.6 model
+description: Bounded coding worker on the local Colibri model
 mode: subagent
 model: colibri/qwen3.6-colibri
 steps: 16

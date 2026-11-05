@@ -7,6 +7,9 @@ the next step, which is either a tool call or a final text answer. Requests
 without tools (Claude Code's background requests) get a short text answer
 and do not use up a step.
 
+/v1/models reports one model, MODEL_ID unless told otherwise, with a
+context_length the way Colibri does, so the scripts can read both.
+
 Every request is recorded, so a test can check what Claude Code sent: the
 model id, the API key header, the system prompt, the tools offered, and the
 result of each tool call.
@@ -42,8 +45,11 @@ def text(answer):
 
 
 class FakeColibri:
-    def __init__(self, script=None, port=0, log_path=None):
+    def __init__(self, script=None, port=0, log_path=None, model_id=MODEL_ID, context=131072):
+        """context=None leaves context_length out of /v1/models."""
         self.script = list(script or [text("done")])
+        self.model_id = model_id
+        self.context = context
         self.requests = []
         self._step = 0
         self._lock = threading.Lock()
@@ -144,7 +150,10 @@ class FakeColibri:
             def do_GET(self):
                 self._record()
                 if self.path.split("?")[0] == "/v1/models":
-                    return self._json(200, {"data": [{"id": MODEL_ID, "type": "model"}]})
+                    model = {"id": fake.model_id, "type": "model"}
+                    if fake.context is not None:
+                        model["context_length"] = model["max_model_len"] = fake.context
+                    return self._json(200, {"data": [model]})
                 self._json(404, {"type": "error", "error": {"type": "not_found_error", "message": self.path}})
 
             def do_POST(self):
@@ -218,9 +227,11 @@ def main():
     parser.add_argument("--port", type=int, default=8000)
     parser.add_argument("--script", help="JSON file: a list of steps, each {\"tool\": name, \"input\": {...}} or {\"text\": answer}")
     parser.add_argument("--log", help="append every request to this file as JSON lines")
+    parser.add_argument("--model-id", default=MODEL_ID, help=f"the model /v1/models reports (default {MODEL_ID})")
+    parser.add_argument("--context", type=int, default=131072, help="its context_length (default 131072)")
     args = parser.parse_args()
     script = json.load(open(args.script)) if args.script else None
-    fake = FakeColibri(script, port=args.port, log_path=args.log)
+    fake = FakeColibri(script, port=args.port, log_path=args.log, model_id=args.model_id, context=args.context)
     print(f"fake Colibri at {fake.base_url}", file=sys.stderr)
     try:
         fake._server.serve_forever()

@@ -1,5 +1,5 @@
 ---
-description: Farm a bounded task to the local Qwen3.6 worker, then verify it
+description: Farm a bounded task to the local worker, then verify it
 agent: build
 ---
 

@@ -47,6 +47,10 @@ cat <<EOF
 The worker reads these, with these defaults:
   export COLIBRI_BASE_URL=http://127.0.0.1:8000/v1
   export COLIBRI_API_KEY=local
-  export COLIBRI_MODEL=qwen3.6-colibri
-  export COLIBRI_CONTEXT=131072
+It asks Colibri which model it serves and its context window. Set
+COLIBRI_MODEL or COLIBRI_CONTEXT only to override them; the worker refuses a
+model the server is not serving or a window larger than the server's.
+
+Follow a running worker with:
+  tail -F ~/.local/state/claude-local-worker/latest.log
 EOF

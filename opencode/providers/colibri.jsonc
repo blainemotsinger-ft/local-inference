@@ -4,6 +4,18 @@
 // Set before starting OpenCode:
 //   export COLIBRI_BASE_URL=http://127.0.0.1:8000/v1
 //   export COLIBRI_API_KEY=local
+//
+// Colibri serves one model at a time, under the id below. To switch, install
+// the other one with scripts/install-colibri.sh, restart Colibri, and change
+// the `model:` line of ~/.config/opencode/agents/local-worker.md to match.
+//
+// OpenCode cannot ask the server for its context window, so "context" has to
+// match it by hand. Check it with:
+//   curl -s -H "x-api-key: $COLIBRI_API_KEY" $COLIBRI_BASE_URL/models
+// and set "context" to the context_length it reports, or lower. 65536 is what
+// Colibri picks for these models on an 8 GB laptop GPU; a larger number than
+// the server's makes OpenCode compact too late and fail with
+// context_length_exceeded.
 "colibri": {
   "name": "Colibri (local)",
   "package": "@opencode/ai/providers/openai-compatible",
@@ -22,7 +34,19 @@
         "output": ["text"]
       },
       "limit": {
-        "context": 131072,
+        "context": 65536,
+        "output": 32768
+      }
+    },
+    "qwen3-coder-30b-a3b-colibri": {
+      "name": "Qwen3-Coder 30B-A3B (local)",
+      "capabilities": {
+        "tools": true,
+        "input": ["text"],
+        "output": ["text"]
+      },
+      "limit": {
+        "context": 65536,
         "output": 32768
       }
     }
