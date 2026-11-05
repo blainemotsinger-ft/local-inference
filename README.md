@@ -1,8 +1,8 @@
 # local-inference
 
-Run a capable local coding worker and farm bounded tasks to it from OpenCode.
-The lead agent writes the task, the local worker does it, and the lead verifies
-the diff and tests before anything lands.
+Run a capable local coding worker and farm bounded tasks to it from OpenCode or
+Claude Code. The lead agent writes the task, the local worker does it, and the
+lead verifies the diff and tests before anything is committed.
 
 ## What this is
 
@@ -15,6 +15,14 @@ the diff and tests before anything lands.
   access, but no push, commit, rebase, or `rm`.
 - **`/farm`** — a command that delegates a task to `local-worker` and requires
   the lead to verify the result.
+- **Claude Code `/farm`** — the same flow with Claude as the lead. The worker
+  is a headless Claude Code process pointed at Colibri's Anthropic-compatible
+  endpoint (`/v1/messages`), with the same denied commands. See
+  `docs/claude-code.md`.
+- **`scripts/claude-colibri.sh`** — a whole Claude Code session on the local
+  model.
+- **Colibri MCP server** — registered in Claude Code so Claude can check,
+  start, and stop Colibri.
 
 ## Measured on the reference box
 
@@ -80,13 +88,27 @@ export COLIBRI_API_KEY=local
 If the server is on another machine, point `COLIBRI_BASE_URL` at it. The model
 ID stays `qwen3.6-colibri` as long as Colibri serves it.
 
+Wire Claude Code:
+
+```bash
+scripts/bootstrap-claude.sh
+```
+
+This copies the `/farm` skill into `~/.claude/skills/`, links
+`claude-local-worker` into `~/.local/bin`, and registers Colibri's MCP server.
+It reads the same `COLIBRI_BASE_URL` and `COLIBRI_API_KEY`, plus
+`COLIBRI_MODEL` (default `qwen3.6-colibri`) and `COLIBRI_CONTEXT` (default
+`131072`). See `docs/claude-code.md` for the details.
+
 ## Use
+
+The command is the same in OpenCode and Claude Code:
 
 ```
 /farm add a test for Select in internal/balancer, run go test ./internal/balancer
 ```
 
-The lead expands the task, spawns `local-worker`, then:
+The lead expands the task, hands it to the local worker, then:
 
 1. reads the diff and every changed file;
 2. runs the named tests and quotes the output;
@@ -94,11 +116,21 @@ The lead expands the task, spawns `local-worker`, then:
 
 The worker cannot commit or push. The lead owns the merge.
 
+To run a whole Claude Code session on the local model instead:
+
+```bash
+scripts/claude-colibri.sh
+```
+
+Its first request is slow. The local model has to read Claude Code's full
+system prompt and tool list before it answers; see `docs/claude-code.md`.
+
 ## What to commit
 
 - `opencode/agents/local-worker.md`
 - `opencode/commands/farm.md`
 - `opencode/providers/colibri.jsonc`
+- `claude/`
 - `scripts/`
 - `docs/`
 - `.gitignore`
@@ -116,6 +148,10 @@ The worker cannot commit or push. The lead owns the merge.
 `local-worker` can edit files and run shell commands for tests. It is denied
 `git push`, `git commit`, `git rebase`, and `rm`. For risky work, run the worker
 in a git worktree and review before merging.
+
+The Claude Code worker has the same denials, set in
+`claude/local-worker-settings.json`. It loads none of your own Claude Code
+settings, hooks, plugins, or MCP servers.
 
 ## Licence
 
